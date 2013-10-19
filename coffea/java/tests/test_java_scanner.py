@@ -164,8 +164,7 @@ class SampleEar(Archive):
 class TestJavaScanner(unittest.TestCase):
 
     def setUp(self):
-        self.scanner = JavaScanner()
-        self.scanner._process_class = mock.MagicMock()
+        self.scanner = JavaScanner(callback=mock.MagicMock())
         self.assertTrue(os.path.isdir(self.scanner._work_dir))
 
     def tearDown(self):
@@ -193,37 +192,53 @@ class TestJavaScanner(unittest.TestCase):
         scanner = self.scanner
          
         with tempfile.NamedTemporaryFile(suffix = '.xml') as not_supported_file:
+            scanner.callback.reset_mock()
             self.assertEquals(scanner.scan(not_supported_file.name), 0) 
-        
+            self.assertEquals(scanner.callback.call_count, 0)
+         
         with tempfile.NamedTemporaryFile(suffix = '.class') as class_file:
             self.assertEquals(scanner.scan(class_file.name), 1) 
-  
+            self.assertEquals(scanner.callback.call_count, 1)
+            scanner.callback.assert_any_call(class_file.name)
+
         with SampleJar() as exploded_jar:
             jar = exploded_jar.compress()
+            scanner.callback.reset_mock()
             self.assertEquals(scanner.scan(jar), 2)
-
+            self.assertEquals(scanner.callback.call_count, 2)
+        
         with SampleWar() as exploded_war:
             war = exploded_war.compress()
+            scanner.callback.reset_mock()
             self.assertEquals(scanner.scan(war), 6)
-    
+            self.assertEquals(scanner.callback.call_count, 6)
+        
         with SampleEar() as exploded_ear:
             ear = exploded_ear.compress()
+            scanner.callback.reset_mock()
             self.assertEquals(scanner.scan(ear), 7)
+            self.assertEquals(scanner.callback.call_count, 7)
     
     def test_scan_directory(self):
         scanner = self.scanner
 
         with SampleJar() as exploded_jar:
+            scanner.callback.reset_mock()
             self.assertEquals(scanner.scan(exploded_jar.root_path), 2)
+            self.assertEquals(scanner.callback.call_count, 2)
         
         with SampleWar() as exploded_war:
+            scanner.callback.reset_mock()
             self.assertEquals(scanner.scan(exploded_war.root_path), 6)
+            self.assertEquals(scanner.callback.call_count, 6)
 
         with SampleEar() as exploded_ear:
+            scanner.callback.reset_mock()
             self.assertEquals(scanner.scan(exploded_ear.root_path), 7)
+            self.assertEquals(scanner.callback.call_count, 7)
     
     def test_with_contract(self):
-        with JavaScanner() as s:
+        with JavaScanner(callback=mock.MagicMock()) as s:
             self.assertTrue(s)
             self.assertTrue(os.path.isdir(s._work_dir))
         self.assertFalse(os.path.isdir(s._work_dir))

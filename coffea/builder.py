@@ -42,8 +42,7 @@ class Builder(object):
         log.info('Scanning path: %s', root_path)
 
         classes = 0
-        with JavaScanner() as scanner:
-            scanner._process_class = self._process_class 
+        with JavaScanner(self._process_class) as scanner:
             classes = scanner.scan(root_path)
             
         log.info('Scan finished. Found %d class files.', classes)

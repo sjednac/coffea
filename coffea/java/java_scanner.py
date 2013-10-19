@@ -32,9 +32,10 @@ log = logging.getLogger('scanner')
 class JavaScanner(object):
     """A simple Java artifact provider."""
 
-    def __init__(self):
+    def __init__(self, callback):
         """Initializes a new instance of the JavaScanner class."""
         self._work_dir = tempfile.mkdtemp()
+        self.callback = callback
          
     def __enter__(self):
         return self
@@ -93,7 +94,9 @@ class JavaScanner(object):
             return 1
 
     def _process_class(self, path):
-        print path
+        if self.callback is None:
+            raise AssertionError('Invalid callback.')
+        self.callback(path)
 
     def _unpack(self, path):
         basename = os.path.basename(path)
@@ -123,5 +126,8 @@ if __name__ == '__main__':
         sys.stderr.write('Target not found: %s\n' % target_path)
         sys.exit(2)
 
-    with JavaScanner() as scanner:
+    def print_result_callback(path): 
+        print path
+
+    with JavaScanner(print_result_callback) as scanner:
         scanner.scan(target_path)
