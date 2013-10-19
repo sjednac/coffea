@@ -34,7 +34,7 @@ class Builder(object):
     def __init__(self, node_factory=None):
         """Initializes a new instance of the Builder class."""
         self.model = Model()
-        self.node_factory = node_factory if node_factory is not None else PackageNodeFactory()
+        self.node_factory = node_factory if node_factory is not None else ClassNodeFactory()
     
     def append(self, root_path):
         """Appends artifacts from the specified path to the underlying model."""

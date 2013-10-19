@@ -23,7 +23,7 @@ import pkg_resources
 import re
 import sys
 
-from coffea.builder import Builder 
+from coffea.builder import Builder, PackageNodeFactory, ClassNodeFactory 
 from coffea.model import NodeIdFilter, NodeIdMapper
 from coffea.plotter import Plotter
 
@@ -40,6 +40,8 @@ class FilterAction(argparse.Action):
 
 parser = argparse.ArgumentParser(version=pkg_resources.get_distribution('coffea').version)
 parser.add_argument('-i', '--input', nargs='+', metavar='PATH', required=True, help='provides a list of input files and/or directories to scan (supported formats: .class, .jar, .war, .ear).')
+parser.add_argument('-m', '--mode', choices=['class', 'package'], default='class', help='select model type')
+
 parser.add_argument('-V', '--verbose', help='increase output verbosity', action='count')
 
 filter_group = parser.add_argument_group('node filters (order matters)')
@@ -59,72 +61,89 @@ if args.verbose == 1:
     logging.basicConfig(level=logging.INFO)
 else:
     logging.basicConfig(level=logging.WARN)
+    
+log = logging.getLogger('coffea')
+log.level = logging.INFO
 
 target_list = args.input
 for target_path in target_list:
     if not os.path.exists(target_path):
         sys.stderr.write('Target not found: %s\n' % target_path)
         sys.exit(2)
-            
+      
+if args.mode == 'class':
+    node_factory = ClassNodeFactory()
+elif args.mode == 'package':
+    node_factory = PackageNodeFactory()
+else:
+    raise AssertionError('Invalid mode: %s' % args.mode)
+          
 try:
-    builder = Builder()
+    builder = Builder(node_factory)
     if hasattr(args, 'ordered_filters'):
-        logging.info('Filter chain:')
+        log.info('Filter chain:')
         for key, val in args.ordered_filters:
             if key == 'include_regexp':
                 pattern = str(val).encode('utf8')
-                logging.info(' -> include nodes (regexp): "%s"', pattern)
+                log.info(' -> include nodes (regexp): "%s"', pattern)
                 builder.model.node_filters.append(NodeIdFilter(lambda it, pattern=pattern: re.match(pattern, it) is not None))
             elif key == 'include_prefix':
                 prefix = str(val).encode('utf8')
-                logging.info(' -> include nodes prefixed with: "%s"', prefix)
+                log.info(' -> include nodes prefixed with: "%s"', prefix)
                 builder.model.node_filters.append(NodeIdFilter(lambda it, prefix=prefix: it.startswith(prefix)))
             elif key == 'include_list':
                 incl_list = map(lambda it: it.encode('utf8'), val)
-                logging.info(' -> include nodes: %s', str(incl_list))
+                log.info(' -> include nodes: %s', str(incl_list))
                 builder.model.node_filters.append(NodeIdFilter(lambda it, incl_list=incl_list: it in incl_list))
             elif key == 'exclude_regexp':
                 pattern = str(val).encode('utf8')
-                logging.info(' -> exclude nodes (regexp): "%s"', pattern)
+                log.info(' -> exclude nodes (regexp): "%s"', pattern)
                 builder.model.node_filters.append(NodeIdFilter(lambda it, pattern=pattern: re.match(pattern, it) is None))
             elif key == 'exclude_prefix':
                 prefix = str(val).encode('utf8')
-                logging.info(' -> exclude nodes prefixed with: "%s"', prefix)
+                log.info(' -> exclude nodes prefixed with: "%s"', prefix)
                 builder.model.node_filters.append(NodeIdFilter(lambda it, prefix=prefix: not it.startswith(prefix)))
             elif key == 'exclude_list':
                 excl_list = map(lambda it: it.encode('utf8'), val)
-                logging.info(' -> exclude nodes: %s', str(excl_list))
+                log.info(' -> exclude nodes: %s', str(excl_list))
                 builder.model.node_filters.append(NodeIdFilter(lambda it, excl_list=excl_list: it not in excl_list))
             elif key == 'remove_prefix':
                 prefix = str(val).encode('utf8')
-                logging.info(' -> map: remove node prefix: "%s"', prefix)
+                log.info(' -> map: remove node prefix: "%s"', prefix)
                 def remove_prefix(node_id, prefix=prefix):
                     node_id = node_id.replace(prefix, '')
                     return node_id if len(node_id) > 0 else '[empty]'
                 builder.model.node_filters.append(NodeIdMapper(remove_prefix))
             elif key == 'extract_pos':
                 pos = int(val)
-                logging.info(' -> map: node name: node.split(".")[%d]', pos)
+                log.info(' -> map: node name: node.split(".")[%d]', pos)
                 def extract_pos(node_id, pos=pos):
                     parts = node_id.split('.')
                     if pos >= len(parts):
-                        logging.warn('Unable to extract position %d from %s', pos, node_id)
+                        log.warn('Unable to extract position %d from %s', pos, node_id)
                         return node_id
                     else:
                         return parts[pos]
                 builder.model.node_filters.append(NodeIdMapper(extract_pos))
 
+    log.info('Building dependency model...')
+
     for target_path in target_list:
         builder.append(target_path)
 
-    for i in range(len(builder.model.node_filters)):
-        nf = builder.model.node_filters[i]
-        if isinstance(nf, NodeIdFilter):
-            logging.info('filter%d: dropped_items: %d', i, nf._drop_count)
-        elif isinstance(nf, NodeIdMapper):
-            logging.info('mapper%d: mapped_items: %d', i, nf._map_count)
-        else:
-            logging.info('filter%d: unknown implementation', i)                
+    # TODO: Debug level
+    if len(builder.model.node_filters) > 0:
+        log.info('Filter stats: ')
+        for i in range(len(builder.model.node_filters)):
+            nf = builder.model.node_filters[i]
+            if isinstance(nf, NodeIdFilter):
+                log.info(' -> filter%d: dropped items: %d', i, nf._drop_count)
+            elif isinstance(nf, NodeIdMapper):
+                log.info(' -> mapper%d: mapped items: %d', i, nf._map_count)
+            else:
+                log.info(' -> filter%d: unknown implementation', i)                
+    
+    log.info('Base nodes: %d', len(builder.model.nodes))
     
     plotter = Plotter(builder.model)
     plotter.plot()
