@@ -16,6 +16,7 @@
 # limitations under the License.
 #
 
+import abc
 import logging
 import os
 import sys
@@ -30,14 +31,16 @@ log = logging.getLogger('builder')
 class Builder(object):
     """Dependency model builder."""
     
-    def __init__(self):
+    def __init__(self, node_factory=None):
         """Initializes a new instance of the Builder class."""
         self.model = Model()
+        self.node_factory = node_factory if node_factory is not None else PackageNodeFactory()
     
     def append(self, root_path):
         """Appends artifacts from the specified path to the underlying model."""
         
         log.info('Scanning path: %s', root_path)
+
         classes = 0
         with JavaScanner() as scanner:
             scanner._process_class = self._process_class 
@@ -45,12 +48,30 @@ class Builder(object):
             
         log.info('Scan finished. Found %d class files.', classes)
 
-    #TODO: NodeCreator with 2 default implementations (PackageNodeCreator and ClassNodeCreator) 
     def _process_class(self, path):
-        node = self._create_node(JavaClass(path))
+        node = self.node_factory.get_node(JavaClass(path))
         log.debug('Processing node: %s', node)
         self.model.merge(node)
     
-    def _create_node(self, java_class):
+
+class NodeFactory(object):
+    """Node factory."""
+    __metaclass__ = abc.ABCMeta
+
+    @abc.abstractmethod
+    def get_node(self, java_class):
+        """Converts a JavaClass instance to a Node instance."""
+        pass
+
+class PackageNodeFactory(NodeFactory):
+    """A NodeFactory for package dependency analysys."""
+
+    def get_node(self, java_class):
         return Node(java_class.package, java_class.package_dependencies())
+
+class ClassNodeFactory(NodeFactory):
+    """A NodeFactory for class dependency analysys."""
+    
+    def get_node(self, java_class):
+        return Node(java_class.name, java_class.class_dependencies())
 

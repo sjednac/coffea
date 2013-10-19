@@ -20,7 +20,7 @@ import mock
 import tempfile
 import unittest
 
-from coffea.builder import Builder
+from coffea.builder import Builder, PackageNodeFactory, ClassNodeFactory
 
 class TestBuilder(unittest.TestCase):
 
@@ -36,4 +36,30 @@ class TestBuilder(unittest.TestCase):
             with tempfile.NamedTemporaryFile(suffix='.class') as f:
                 builder.append(f.name)
                 self.assertTrue(builder.model.merge.called)
-                #TODO: Check merge arguments 
+                #TODO: Check merge arguments
+                
+                
+    def test_package_node_factory(self):
+        java_class = mock.MagicMock()
+        java_class.package = 'com.example'
+        java_class.package_dependencies = mock.MagicMock(return_value=['com.example.service', 'com.example.model'])
+        
+        factory = PackageNodeFactory()
+        node = factory.get_node(java_class)
+
+        self.assertTrue(node)
+        self.assertEqual(node.id, 'com.example')
+        self.assertEqual(node.connections, set(['com.example.service', 'com.example.model']))
+    
+    def test_class_node_factory(self):
+        java_class = mock.MagicMock()
+        java_class.name = 'Test'
+        java_class.class_dependencies = mock.MagicMock(return_value=['com.example.service.TestService', 'com.example.model.TestModel'])
+       
+        factory = ClassNodeFactory()
+        node = factory.get_node(java_class)
+
+        self.assertTrue(node)
+        self.assertEqual(node.id, 'Test')
+        self.assertEqual(node.connections, set(['com.example.service.TestService', 'com.example.model.TestModel']))
+        
