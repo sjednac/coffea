@@ -41,7 +41,7 @@ class FilterAction(argparse.Action):
 parser = argparse.ArgumentParser(version=pkg_resources.get_distribution('coffea').version)
 parser.add_argument('-i', '--input', nargs='+', metavar='PATH', required=True, help='provides a list of input files and/or directories to scan (supported formats: .class, .jar, .war, .ear).')
 parser.add_argument('-m', '--mode', choices=['class', 'package'], default='class', help='select model type')
-
+parser.add_argument('-R', '--remove-ext-conn', help='remove external connections', action='store_true')
 parser.add_argument('-V', '--verbose', help='increase output verbosity', action='count')
 
 filter_group = parser.add_argument_group('node filters (order matters)')
@@ -144,7 +144,12 @@ try:
                 log.info(' -> filter%d: unknown implementation', i)                
     
     log.info('Base nodes: %d', len(builder.model.nodes))
-    
+   
+    if args.remove_ext_conn:
+        log.info('Removing external connections...')
+        conn_count = builder.model.remove_external_connections()
+        log.info('Removed %d connections.', conn_count)
+        
     plotter = Plotter(builder.model)
     plotter.plot()
 

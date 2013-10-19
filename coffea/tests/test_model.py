@@ -55,7 +55,31 @@ class TestModel(unittest.TestCase):
         self.assertEquals(model.nodes[0].id, 'NODE0')
         self.assertEquals(model.nodes[1].id, 'NODE2')
         self.assertEquals(model.nodes[0].connections, set(['NODE2']))
+    
+    def test_remove_external_connections(self):
+        model = Model()
+        nodes = [Node('node0', ['node1', 'node2', 'ext0']), 
+                 Node('node1', ['ext1']), 
+                 Node('node2'),
+                 Node('node3', ['ext0', 'node2', 'ext1', 'ext2', 'ext3'])]
+
+        for n in nodes:
+            model.merge(n)
+
+        self.assertEqual(model.remove_external_connections(), 6)
         
+        self.assertEquals(len(model.nodes), 4)
+        self.assertEquals(model.nodes[0].id, 'node0')
+        self.assertEquals(model.nodes[0].connections, set(['node1', 'node2']))
+        self.assertEquals(model.nodes[1].id, 'node1')
+        self.assertEquals(model.nodes[1].connections, set([]))
+        self.assertEquals(model.nodes[2].id, 'node2')
+        self.assertEquals(model.nodes[2].connections, set([]))
+        self.assertEquals(model.nodes[3].id, 'node3')
+        self.assertEquals(model.nodes[3].connections, set(['node2']))
+    
+        self.assertRaises(AssertionError, model.merge, nodes[0])
+
     def test_node_repr(self):
         node = Node('sample')
         self.assertEquals(str(node), 'sample')

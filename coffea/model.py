@@ -29,6 +29,7 @@ class Model(object):
         """Initializes a new instance of the Model class."""
         
         self._lock = threading.Lock()
+        self._open = True
         self.nodes = []
         self.node_filters = []
             
@@ -45,6 +46,9 @@ class Model(object):
        
         self._lock.acquire()
        
+        if not self._open:
+            raise AssertionError('Unable to merge() node: model was closed.')
+
         #TODO: Find *first* occurrence 
         existing = filter(lambda it: it.id == node.id, self.nodes)
         if existing:
@@ -57,6 +61,21 @@ class Model(object):
         
         self._lock.release()
 
+    def remove_external_connections(self):
+        """Removes external connections from all Nodes."""
+        self._lock.acquire()
+
+        remove_counter = 0
+        internal_ids = set(map(lambda it: it.id, self.nodes))
+        for node in self.nodes:
+            init_size = len(node.connections)
+            node.connections = set(filter(lambda it: it in internal_ids, node.connections)) 
+            remove_counter += init_size - len(node.connections)
+
+        self._open = False
+        self._lock.release()
+
+        return remove_counter
 
 class Node(object):
     """A graph node."""
