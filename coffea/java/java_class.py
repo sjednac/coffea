@@ -207,7 +207,7 @@ class JavaClass(object):
             interface_class = self._constant_pool_class(interface_cp_index) 
             self.interfaces.append(interface_class)
 
-        self.package = '.'.join(self.name.split('/')[:-1])
+        self.package = '.'.join(self.name.split('.')[:-1])
 
     def _parse_fields(self, f):
         """Parse class fields."""
@@ -279,7 +279,7 @@ class JavaClass(object):
 
     def _constant_pool_class(self, class_index):
         """Gets a class name from the constant pool."""
-        return self._constant_pool_name(self.constant_pool[class_index].name_index)
+        return self._constant_pool_name(self.constant_pool[class_index].name_index).replace('/', '.')
 
     def _constant_pool_name(self, name_index):
         """Gets a name from the constant pool."""

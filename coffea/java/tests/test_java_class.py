@@ -31,8 +31,8 @@ class TestJavaClass(unittest.TestCase):
 
     def test_declaration(self):
         self.assertEqual(self.obj.name, 'SimplePOJO')
-        self.assertEquals(self.obj.super_name, 'java/lang/Object')
-        self.assertEquals(self.obj.interfaces, ['java/io/Serializable'])
+        self.assertEquals(self.obj.super_name, 'java.lang.Object')
+        self.assertEquals(self.obj.interfaces, ['java.io.Serializable'])
         
         self.assertTrue(self.obj.public)
         self.assertTrue(self.obj.final)
