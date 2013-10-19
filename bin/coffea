@@ -1,0 +1,134 @@
+#! /usr/bin/env python
+# -*- encoding: utf-8 -*-
+#
+# Copyright 2013 Szymon Biliński 
+# 
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
+import argparse
+import logging
+import os
+import pkg_resources
+import re
+import sys
+
+from coffea.builder import Builder 
+from coffea.model import NodeIdFilter, NodeIdMapper
+from coffea.plotter import Plotter
+
+class FilterAction(argparse.Action):
+    
+    def __call__(self, parser, args, values, option_string=None):
+        if not 'ordered_filters' in args:
+            setattr(args, 'ordered_filters', [])
+        
+        current = args.ordered_filters
+        current.append((self.dest, values))
+        setattr(args, 'ordered_filters', current)
+        setattr(args, self.dest, values)
+
+parser = argparse.ArgumentParser(version=pkg_resources.get_distribution('coffea').version)
+parser.add_argument('-i', '--input', nargs='+', metavar='PATH', required=True, help='provides a list of input files and/or directories to scan (supported formats: .class, .jar, .war, .ear).')
+parser.add_argument('-V', '--verbose', help='increase output verbosity', action='count')
+
+filter_group = parser.add_argument_group('node filters (order matters)')
+filter_group.add_argument('-Ir', '--include-regexp', metavar='REGEXP', action=FilterAction, help='include nodes matching REGEXP')
+filter_group.add_argument('-Ip', '--include-prefix', metavar='PREFIX', action=FilterAction, help='include nodes starting with PREFIX') 
+filter_group.add_argument('-Il', '--include-list', metavar='LIST', nargs='+', action=FilterAction, help='include nodes from LIST') 
+filter_group.add_argument('-Er', '--exclude-regexp', metavar='REGEXP', action=FilterAction, help='exclude nodes matching REGEXP')
+filter_group.add_argument('-Ep', '--exclude-prefix', metavar='PREFIX', action=FilterAction, help='exclude nodes starting with PREFIX')
+filter_group.add_argument('-El', '--exclude-list', metavar='LIST', nargs='+', action=FilterAction, help='exclude nodes from LIST') 
+filter_group.add_argument('-Mrp', '--remove-prefix', metavar='PREFIX', action=FilterAction, help='remove PREFIX from node name') 
+filter_group.add_argument('-Mep', '--extract-pos', metavar='POS', action=FilterAction, type=int, help='make name.split(\'.\')[POS] the new name') 
+args = parser.parse_args()
+
+if args.verbose == 2:
+    logging.basicConfig(level=logging.DEBUG)
+if args.verbose == 1:
+    logging.basicConfig(level=logging.INFO)
+else:
+    logging.basicConfig(level=logging.WARN)
+
+target_list = args.input
+for target_path in target_list:
+    if not os.path.exists(target_path):
+        sys.stderr.write('Target not found: %s\n' % target_path)
+        sys.exit(2)
+            
+try:
+    builder = Builder()
+    if hasattr(args, 'ordered_filters'):
+        logging.info('Filter chain:')
+        for key, val in args.ordered_filters:
+            if key == 'include_regexp':
+                pattern = str(val).encode('utf8')
+                logging.info(' -> include nodes (regexp): "%s"', pattern)
+                builder.model.node_filters.append(NodeIdFilter(lambda it, pattern=pattern: re.match(pattern, it) is not None))
+            elif key == 'include_prefix':
+                prefix = str(val).encode('utf8')
+                logging.info(' -> include nodes prefixed with: "%s"', prefix)
+                builder.model.node_filters.append(NodeIdFilter(lambda it, prefix=prefix: it.startswith(prefix)))
+            elif key == 'include_list':
+                incl_list = map(lambda it: it.encode('utf8'), val)
+                logging.info(' -> include nodes: %s', str(incl_list))
+                builder.model.node_filters.append(NodeIdFilter(lambda it, incl_list=incl_list: it in incl_list))
+            elif key == 'exclude_regexp':
+                pattern = str(val).encode('utf8')
+                logging.info(' -> exclude nodes (regexp): "%s"', pattern)
+                builder.model.node_filters.append(NodeIdFilter(lambda it, pattern=pattern: re.match(pattern, it) is None))
+            elif key == 'exclude_prefix':
+                prefix = str(val).encode('utf8')
+                logging.info(' -> exclude nodes prefixed with: "%s"', prefix)
+                builder.model.node_filters.append(NodeIdFilter(lambda it, prefix=prefix: not it.startswith(prefix)))
+            elif key == 'exclude_list':
+                excl_list = map(lambda it: it.encode('utf8'), val)
+                logging.info(' -> exclude nodes: %s', str(excl_list))
+                builder.model.node_filters.append(NodeIdFilter(lambda it, excl_list=excl_list: it not in excl_list))
+            elif key == 'remove_prefix':
+                prefix = str(val).encode('utf8')
+                logging.info(' -> map: remove node prefix: "%s"', prefix)
+                def remove_prefix(node_id, prefix=prefix):
+                    node_id = node_id.replace(prefix, '')
+                    return node_id if len(node_id) > 0 else '[empty]'
+                builder.model.node_filters.append(NodeIdMapper(remove_prefix))
+            elif key == 'extract_pos':
+                pos = int(val)
+                logging.info(' -> map: node name: node.split(".")[%d]', pos)
+                def extract_pos(node_id, pos=pos):
+                    parts = node_id.split('.')
+                    if pos >= len(parts):
+                        logging.warn('Unable to extract position %d from %s', pos, node_id)
+                        return node_id
+                    else:
+                        return parts[pos]
+                builder.model.node_filters.append(NodeIdMapper(extract_pos))
+
+    for target_path in target_list:
+        builder.append(target_path)
+
+    for i in range(len(builder.model.node_filters)):
+        nf = builder.model.node_filters[i]
+        if isinstance(nf, NodeIdFilter):
+            logging.info('filter%d: dropped_items: %d', i, nf._drop_count)
+        elif isinstance(nf, NodeIdMapper):
+            logging.info('mapper%d: mapped_items: %d', i, nf._map_count)
+        else:
+            logging.info('filter%d: unknown implementation', i)                
+    
+    plotter = Plotter(builder.model)
+    plotter.plot()
+
+except (KeyboardInterrupt, SystemExit):
+    sys.stderr.write('Terminated.\n')
+    sys.exit(3)
