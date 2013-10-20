@@ -16,6 +16,7 @@
 # limitations under the License.
 #
 
+import logging
 import mock
 import os
 import shutil
@@ -25,6 +26,9 @@ import unittest
 from coffea.plotter import Plotter
 
 class TestPlotter(unittest.TestCase):
+
+    def setUp(self):
+        logging.disable(logging.CRITICAL)
 
     def test_graph_builder(self):
         node1, node2 = mock.MagicMock(), mock.MagicMock()
