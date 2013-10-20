@@ -49,13 +49,9 @@ class Model(object):
         if not self._open:
             raise AssertionError('Unable to merge() node: model was closed.')
 
-        #TODO: Find *first* occurrence 
-        existing = filter(lambda it: it.id == node.id, self.nodes)
-        if existing:
-            existing=existing[0]
-
-            for new_conn in node.connections:
-                existing.connections.add(new_conn)
+        existing_node = next((it for it in self.nodes if it.id == node.id), None)
+        if existing_node is not None:
+            existing_node.connections = existing_node.connections.union(node.connections)
         else:
             self.nodes.append(node)
         

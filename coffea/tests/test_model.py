@@ -27,7 +27,7 @@ class TestModel(unittest.TestCase):
         model = Model()
 
         nodes = [Node('node0', ['node1']), 
-                 Node('node1'), 
+                 Node('node1', ['external0']), 
                  Node('node2'),
                  Node('node0', ['node2'])]
         for n in nodes:
@@ -36,6 +36,10 @@ class TestModel(unittest.TestCase):
         self.assertEquals(len(model.nodes), 3)
         self.assertEquals(model.nodes[0].id, 'node0')
         self.assertEquals(model.nodes[0].connections, set(['node1', 'node2']))
+        self.assertEquals(model.nodes[1].id, 'node1')
+        self.assertEquals(model.nodes[1].connections, set(['external0']))
+        self.assertEquals(model.nodes[2].id, 'node2')
+        self.assertEquals(model.nodes[2].connections, set([]))
 
     def test_standard_node_filters(self):
         model = Model()
