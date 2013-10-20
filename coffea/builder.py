@@ -57,6 +57,19 @@ class NodeFactory(object):
     """Node factory."""
     __metaclass__ = abc.ABCMeta
 
+    def __init__(self, size_property=None):
+        self.size_property = size_property
+
+    def _get_size(self, java_class):
+        if self.size_property == None:
+            return 0
+        elif self.size_property == 'class':
+            return java_class.size
+        elif self.size_property == 'code':
+            return java_class.code_size
+        else:
+            raise AssertionError('Invalid size property: %s' % self.size_property)
+
     @abc.abstractmethod
     def get_node(self, java_class):
         """Converts a JavaClass instance to a Node instance."""
@@ -66,11 +79,16 @@ class PackageNodeFactory(NodeFactory):
     """A NodeFactory for package dependency analysys."""
 
     def get_node(self, java_class):
-        return Node(java_class.package, java_class.package_dependencies())
+        return Node(java_class.package, java_class.package_dependencies(), self._get_size(java_class))
+
+    def __repr__(self):
+        return 'PackageNodeFactory: size_property=%s' % self.size_property
 
 class ClassNodeFactory(NodeFactory):
     """A NodeFactory for class dependency analysys."""
     
     def get_node(self, java_class):
-        return Node(java_class.name, java_class.class_dependencies())
+        return Node(java_class.name, java_class.class_dependencies(), self._get_size(java_class))
 
+    def __repr__(self):
+        return 'ClassNodeFactory: size_property=%s' % self.size_property

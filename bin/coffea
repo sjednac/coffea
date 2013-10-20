@@ -42,6 +42,7 @@ parser = argparse.ArgumentParser(version=pkg_resources.get_distribution('coffea'
 parser.add_argument('-i', '--input', nargs='+', metavar='PATH', required=True, help='provides a list of input files and/or directories to scan (supported formats: .class, .jar, .war, .ear).')
 parser.add_argument('-m', '--mode', choices=['class', 'package'], default='class', help='select model type')
 parser.add_argument('-R', '--remove-ext-conn', help='remove external connections', action='store_true')
+parser.add_argument('-ns', '--node-size', choices=['class', 'code'], default=None, help='select node size model')
 parser.add_argument('-V', '--verbose', help='increase output verbosity', action='count')
 
 filter_group = parser.add_argument_group('node filters (order matters)')
@@ -70,13 +71,15 @@ for target_path in target_list:
     if not os.path.exists(target_path):
         sys.stderr.write('Target not found: %s\n' % target_path)
         sys.exit(2)
-      
+    
 if args.mode == 'class':
-    node_factory = ClassNodeFactory()
+    node_factory = ClassNodeFactory(size_property=args.node_size)
 elif args.mode == 'package':
-    node_factory = PackageNodeFactory()
+    node_factory = PackageNodeFactory(size_property=args.node_size)
 else:
     raise AssertionError('Invalid mode: %s' % args.mode)
+
+log.debug('Node factory: %s', node_factory)
           
 try:
     builder = Builder(node_factory)
@@ -151,7 +154,7 @@ try:
         log.info('Removed %d connections.', conn_count)
         
     plotter = Plotter(builder.model)
-    plotter.plot()
+    plotter.plot(calc_node_size=args.node_size is not None)
 
 except (KeyboardInterrupt, SystemExit):
     sys.stderr.write('Terminated.\n')

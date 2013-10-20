@@ -41,7 +41,7 @@ class TestBuilder(unittest.TestCase):
                 
     def test_package_node_factory(self):
         java_class = mock.MagicMock()
-        java_class.package = 'com.example'
+        java_class.package, java_class.size, java_class.code_size = 'com.example', 100, 50
         java_class.package_dependencies = mock.MagicMock(return_value=['com.example.service', 'com.example.model'])
         
         factory = PackageNodeFactory()
@@ -50,10 +50,17 @@ class TestBuilder(unittest.TestCase):
         self.assertTrue(node)
         self.assertEqual(node.id, 'com.example')
         self.assertEqual(node.connections, set(['com.example.service', 'com.example.model']))
-    
+        self.assertEqual(node.size, 0)
+        
+        factory.size_property = 'class'
+        self.assertEqual(factory.get_node(java_class).size, 100) 
+        
+        factory.size_property = 'code'
+        self.assertEqual(factory.get_node(java_class).size, 50) 
+         
     def test_class_node_factory(self):
         java_class = mock.MagicMock()
-        java_class.name = 'Test'
+        java_class.name, java_class.size, java_class.code_size = 'Test', 100, 50
         java_class.class_dependencies = mock.MagicMock(return_value=['com.example.service.TestService', 'com.example.model.TestModel'])
        
         factory = ClassNodeFactory()
@@ -62,4 +69,10 @@ class TestBuilder(unittest.TestCase):
         self.assertTrue(node)
         self.assertEqual(node.id, 'Test')
         self.assertEqual(node.connections, set(['com.example.service.TestService', 'com.example.model.TestModel']))
+        self.assertEqual(node.size, 0)
         
+        factory.size_property = 'class'
+        self.assertEqual(factory.get_node(java_class).size, 100) 
+        
+        factory.size_property = 'code'
+        self.assertEqual(factory.get_node(java_class).size, 50) 

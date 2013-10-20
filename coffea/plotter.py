@@ -47,7 +47,7 @@ class Plotter(object):
 
         plt.figure(facecolor='#fefefe', dpi=80, frameon=True) 
         plt.axis('off')
-        
+       
         try:
             positions = nx.graphviz_layout(self.graph)
         except ImportError as err:
@@ -59,27 +59,63 @@ class Plotter(object):
             log.warn('Graphviz layout failed: error=%s', err)
             log.warn('Falling back to spring layout...')
             positions = nx.spring_layout(self.graph)
-
+   
+        if 'calc_node_size' in kwargs and kwargs['calc_node_size']:
+            node_size = self._node_size_vector
+            if node_size is None:
+                node_size = 300
+        else:  
+            node_size = 300 
+            
+        log.debug('Drawing nodes...') 
         nx.draw_networkx_nodes(self.graph, positions, 
                                node_color=self.node_colors, 
+                               node_size=node_size,
                                alpha=0.8)
+        
+        log.debug('Drawing edges...') 
         nx.draw_networkx_edges(self.graph, positions, 
                                edge_color='#666666', 
                                alpha=0.75)
+        
+        log.debug('Drawing labels...') 
         nx.draw_networkx_labels(self.graph,positions, 
                                 font_color='#222222', 
                                 font_family='courier new',
                                 font_weight='bold')
+        
+        log.debug('Plotting graph...')
         try: 
             filename = kwargs['filename']
             plt.savefig(filename, bbox_inches='tight')
         except KeyError:
             plt.show()
-         
+
+    @property
+    def _node_size_vector(self):
+        log.debug('Calculating size vector...')
+        size_vect = []
+        for _, attrs in self.graph.nodes_iter(data = True):
+            if 'size' in attrs:
+                size_vect.append(attrs['size'])
+            else:
+                # External node may not have a size attribute
+                size_vect.append(0)
+
+        max_val = max(size_vect)
+        if max_val != 0:
+            log.debug('Normalizing size vector...')
+            size_vect = [200 + s / (max_val*1.0)*800 for s in size_vect]
+        else:
+            size_vect = None       
+
+        return size_vect
+    
+    
     def _build_graph(self, model):
         graph = nx.DiGraph()
         for node in model.nodes:
-            graph.add_node(node.id)
+            graph.add_node(node.id, size=node.size)
     
         for node in model.nodes:
             for conn in node.connections:

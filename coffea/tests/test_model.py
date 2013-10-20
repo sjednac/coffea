@@ -26,20 +26,23 @@ class TestModel(unittest.TestCase):
     def test_merge(self):
         model = Model()
 
-        nodes = [Node('node0', ['node1']), 
+        nodes = [Node('node0', ['node1'], 40), 
                  Node('node1', ['external0']), 
-                 Node('node2'),
-                 Node('node0', ['node2'])]
+                 Node('node2', size=5),
+                 Node('node0', ['node2'], 10)]
         for n in nodes:
             model.merge(n)
 
         self.assertEquals(len(model.nodes), 3)
         self.assertEquals(model.nodes[0].id, 'node0')
         self.assertEquals(model.nodes[0].connections, set(['node1', 'node2']))
+        self.assertEquals(model.nodes[0].size, 50)
         self.assertEquals(model.nodes[1].id, 'node1')
         self.assertEquals(model.nodes[1].connections, set(['external0']))
+        self.assertEquals(model.nodes[1].size, 0)
         self.assertEquals(model.nodes[2].id, 'node2')
         self.assertEquals(model.nodes[2].connections, set([]))
+        self.assertEquals(model.nodes[2].size, 5)
 
     def test_standard_node_filters(self):
         model = Model()

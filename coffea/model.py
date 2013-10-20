@@ -51,6 +51,7 @@ class Model(object):
 
         existing_node = next((it for it in self.nodes if it.id == node.id), None)
         if existing_node is not None:
+            existing_node.size += node.size
             existing_node.connections = existing_node.connections.union(node.connections)
         else:
             self.nodes.append(node)
@@ -76,10 +77,11 @@ class Model(object):
 class Node(object):
     """A graph node."""
 
-    def __init__(self, node_id, connections=[]):
+    def __init__(self, node_id, connections=[], size=0):
         """Initializes a new instance of the Node class."""
         self.id = node_id
         self.connections = set(connections)
+        self.size = size
 
     def __repr__(self):
         """Returns a string representation of the object."""
