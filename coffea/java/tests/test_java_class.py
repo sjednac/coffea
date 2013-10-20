@@ -62,6 +62,10 @@ class TestJavaClass(unittest.TestCase):
     def _find_by_name(self, seq, name):
         return filter(lambda it: it.name == name, seq) 
 
+    def test_size(self):
+        self.assertEquals(self.obj.size, 1455)
+        self.assertEquals(self.obj.code_size, 426)
+
     def test_class_dependencies(self):
         self.assertEquals(self.obj.class_dependencies(), ['SimplePOJO', 
                                                           'java.io.Serializable', 

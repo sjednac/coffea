@@ -18,6 +18,7 @@
 
 import itertools
 import logging
+import os
 import struct
 import sys
 
@@ -117,6 +118,8 @@ class JavaClass(object):
         """Main parse method."""    
         log.debug('Processing bytecode: %s', filename)
         with open(filename, "rb") as f:
+            self.size = os.fstat(f.fileno()).st_size
+
             self._parse_header(f)
             self._parse_constant_pool(f)
             self._parse_class_declaration(f)
@@ -285,7 +288,16 @@ class JavaClass(object):
 
     @property
     def package(self):
+        """Returns the package name."""
         return '.'.join(self.name.split('.')[:-1])
+
+    @property
+    def code_size(self):
+        """Returns the code size in bytes."""
+        code_size = 0
+        for m in self.methods:
+            code_size += next((atr.value.length for atr in m.attrs if atr.name == 'Code'), 0)
+        return code_size
 
     def class_dependencies(self, sort=True):
         """Returns a set of class dependencies."""
