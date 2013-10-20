@@ -207,8 +207,6 @@ class JavaClass(object):
             interface_class = self._constant_pool_class(interface_cp_index) 
             self.interfaces.append(interface_class)
 
-        self.package = '.'.join(self.name.split('.')[:-1])
-
     def _parse_fields(self, f):
         """Parse class fields."""
         (fields_count,) = struct.unpack('>H', f.read(2))
@@ -284,6 +282,10 @@ class JavaClass(object):
     def _constant_pool_name(self, name_index):
         """Gets a name from the constant pool."""
         return self.constant_pool[name_index].utf8_str
+
+    @property
+    def package(self):
+        return '.'.join(self.name.split('.')[:-1])
 
     def class_dependencies(self, sort=True):
         """Returns a set of class dependencies."""

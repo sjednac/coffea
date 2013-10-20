@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#p!/usr/bin/env python
 # -*- encoding: utf-8 -*-
 #
 # Copyright 2013 Szymon Biliński 
@@ -31,6 +31,7 @@ class TestJavaClass(unittest.TestCase):
 
     def test_declaration(self):
         self.assertEqual(self.obj.name, 'SimplePOJO')
+        self.assertEqual(self.obj.package, '')
         self.assertEquals(self.obj.super_name, 'java.lang.Object')
         self.assertEquals(self.obj.interfaces, ['java.io.Serializable'])
         
