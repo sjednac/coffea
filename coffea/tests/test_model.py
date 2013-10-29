@@ -87,6 +87,29 @@ class TestModel(unittest.TestCase):
     
         self.assertRaises(AssertionError, model.merge, nodes[0])
 
+    def test_create_external_nodes(self):
+        model = Model()
+        nodes = [Node('node0', ['node1', 'node2', 'ext0']), 
+                 Node('node1', ['ext1']), 
+                 Node('node2'),
+                 Node('node3', ['ext0', 'node2', 'ext1', 'ext2', 'ext3'])]
+
+        for n in nodes:
+            model.merge(n)
+
+        self.assertEqual(model.create_external_nodes(), 4)
+        
+        ids = map(lambda it: it.id, model.nodes)
+
+        self.assertListEqual(sorted(ids), ['ext0', 'ext1', 'ext2', 'ext3', 'node0', 'node1', 'node2', 'node3'] )
+        self.assertRaises(AssertionError, model.merge, nodes[0])
+
+        for n in model.nodes:
+            if n.id.startswith('node'):
+                self.assertFalse(n.external, "Node %s is marked as external." % n.id)
+            else:
+                self.assertTrue(n.external, "Node %s isn't marked as external." % n.id)
+
     def test_node_repr(self):
         node = Node('sample')
         self.assertEquals(str(node), 'sample')

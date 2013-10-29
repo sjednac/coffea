@@ -152,7 +152,11 @@ try:
         log.info('Removing external connections...')
         conn_count = builder.model.remove_external_connections()
         log.info('Removed %d connections.', conn_count)
-        
+    else:
+        log.info('Creating external nodes...')
+        extn_count = builder.model.create_external_nodes()
+        log.info('Found %d external nodes.', extn_count)
+         
     plotter = Plotter(builder.model)
     plotter.plot(calc_node_size=args.node_size is not None)
 

@@ -74,19 +74,47 @@ class Model(object):
 
         return remove_counter
 
+    def create_external_nodes(self):
+        """Creates nodes that are referenced through Node connections, but do not exist in the model."""
+        self._lock.acquire()
+        
+        external_nodes = set([]) 
+        internal_ids = set(map(lambda it: it.id, self.nodes))
+        
+        for node in self.nodes:
+            for conn in node.connections:
+                if conn not in internal_ids:
+                    external_nodes.add(Node(conn, external=True))
+       
+        self.nodes.extend(list(external_nodes))            
+        self._open = False
+        self._lock.release()
+        
+        return len(external_nodes)
+
 class Node(object):
     """A graph node."""
 
-    def __init__(self, node_id, connections=[], size=0):
+    def __init__(self, node_id, connections=[], size=0, external=False):
         """Initializes a new instance of the Node class."""
         self.id = node_id
         self.connections = set(connections)
         self.size = size
+        self.external = external 
 
     def __repr__(self):
         """Returns a string representation of the object."""
         return str(self.id)
 
+    def __key(self):
+        return (self.id,)
+
+    def __eq__(self, other):
+        return (isinstance(other, type(self)) and (self.id,) == (other.id,))
+
+    def __hash__(self):
+        return (hash(self.id)) 
+    
 
 class NodeFilter(object):
     """Abstract base class for model node filters."""
