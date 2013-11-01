@@ -19,12 +19,12 @@ An extended example
 
 Modelling `JBoss AS 7.x <http://www.jboss.org/jbossas>`_ internal dependency structure:: 
 
-    $ coffea -i /opt/jboss-7.2.0.GA/modules/ -Ip org.jboss. -Mrp org.jboss. -Mep 0 -El logging
+    $ coffea -p -i /opt/jboss-7.2.0.GA/modules/ -Ip org.jboss. -Mrp org.jboss. -Mep 0 -El logging
 
 Interactive mode equivalent::
     
     >>> from coffea.builder import Builder
-    >>> from coffea.plotter import Plotter
+    >>> from coffea.analyzer import Plotter
     >>> from coffea.model import NodeIdFilter, NodeIdMapper
     >>> b = Builder()
     >>> b.model.node_filters.append(NodeIdFilter(lambda it: it.startswith('org.jboss.')))

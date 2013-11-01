@@ -23,9 +23,9 @@ import shutil
 import tempfile
 import unittest
 
-from coffea.plotter import Plotter
+from coffea.analyzer import Analyzer, Writer, Plotter
 
-class TestPlotter(unittest.TestCase):
+class TestAnalyzer(unittest.TestCase):
 
     def setUp(self):
         logging.disable(logging.CRITICAL)
@@ -57,6 +57,37 @@ class TestPlotter(unittest.TestCase):
             else:
                 self.fail('Unexpected node: %s' % n)
 
+    def test_writing(self):
+        node1, node2 = mock.MagicMock(), mock.MagicMock()
+        node1.id, node1.size, node1.connections = 'node1', 42, set(['node2', 'external1'])
+        node2.id, node2.size, node2.connections = 'node2', 0, set([])
+        
+        model = mock.MagicMock()
+        model.nodes = [node1, node2]
+        
+        writer = Writer(model)
+
+        try:
+            work_dir = tempfile.mkdtemp()
+            
+            filename = os.path.join(work_dir, 'test1.dot')
+            writer.write(filename)
+            self.assertTrue(os.path.exists(filename))
+            
+            filename = os.path.join(work_dir, 'test2.dot')
+            writer.write(filename, data_format='dot')
+            self.assertTrue(os.path.exists(filename))
+            
+            filename = os.path.join(work_dir, 'test2.gml')
+            writer.write(filename, data_format='gml')
+            self.assertTrue(os.path.exists(filename))
+            
+            filename = os.path.join(work_dir, 'test2.graphml')
+            writer.write(filename, data_format='graphml')
+            self.assertTrue(os.path.exists(filename))
+        finally:
+            shutil.rmtree(work_dir)
+
     def test_plotting(self):
         node1, node2 = mock.MagicMock(), mock.MagicMock()
         node1.id, node1.size, node1.connections = 'node1', 100, set(['node2', 'external1'])
@@ -68,7 +99,7 @@ class TestPlotter(unittest.TestCase):
         try:
             work_dir = tempfile.mkdtemp()
            
-            with mock.patch('coffea.plotter.Plotter._node_size_vector') as nsv_mock:
+            with mock.patch('coffea.analyzer.Plotter._node_size_vector') as nsv_mock:
                 nsv_mock.__get__ = mock.MagicMock()
 
                 plotter = Plotter(model)
@@ -80,7 +111,7 @@ class TestPlotter(unittest.TestCase):
                 self.assertTrue(os.path.exists(filename))
                 self.assertFalse(nsv_mock.__get__.called) 
 
-            with mock.patch('coffea.plotter.Plotter._node_size_vector') as nsv_mock:
+            with mock.patch('coffea.analyzer.Plotter._node_size_vector') as nsv_mock:
                 nsv_mock.__get__ = mock.MagicMock(return_value=[1000, 200, 200])
 
                 plotter = Plotter(model)

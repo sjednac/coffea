@@ -16,20 +16,21 @@
 # limitations under the License.
 #
 
+import abc
 import logging
 import matplotlib as mlt
 import matplotlib.pyplot as plt
 import networkx as nx
+import os
 
-log = logging.getLogger('plotter')
+log = logging.getLogger('analyzer')
 
-class Plotter(object):
-    """A graph plotter."""
-
-    node_colors = ['#ffd070', '#e6ff6f', '#ff886f', '#6f9eff', '#cf6fff']
+class Analyzer(object):
+    """Abstract base class for model analyzers."""
+    __metaclass__ = abc.ABCMeta
 
     def __init__(self, model):
-        """Initializes a new instance of the Plotter class."""
+        """Initializes a new instance of the Analyzer class."""
         
         self.model = model
         self._graph = None
@@ -41,6 +42,49 @@ class Plotter(object):
         if self._graph is None:
             self._graph = self._build_graph(self.model)
         return self._graph
+
+    def _build_graph(self, model):
+        log.debug('Building NetworkX graph...')
+        graph = nx.DiGraph()
+        for node in model.nodes:
+            graph.add_node(node.id, size=node.size)
+    
+        for node in model.nodes:
+            for conn in node.connections:
+                graph.add_edge(node.id, conn) 
+
+        log.debug('NetworkX graph size: nodes=%d edges=%d', graph.number_of_nodes(), graph.number_of_edges())        
+        return graph
+
+
+class Writer(Analyzer):
+    """A graph model writer"""
+    
+    def __init__(self, model):
+        """Initializes a new instance of the Writer class."""
+        super(Writer, self).__init__(model)
+    
+    def write(self, path, data_format='dot'):
+        """Writes the underlying graph model to a specific file."""
+        
+        if data_format == 'dot':
+            nx.write_dot(self.graph, path)
+        elif data_format == 'gml':
+            nx.write_gml(self.graph, path)
+        elif data_format == 'graphml':
+            nx.write_graphml(self.graph, path)
+        else:
+            raise AssertionError('Invalid format: %s' % data_format)
+
+
+class Plotter(Analyzer):
+    """A graph plotter."""
+
+    node_colors = ['#ffd070', '#e6ff6f', '#ff886f', '#6f9eff', '#cf6fff']
+
+    def __init__(self, model):
+        """Initializes a new instance of the Plotter class."""
+        super(Plotter, self).__init__(model)
 
     def plot(self, **kwargs):
         """Plots the underlying graph."""
@@ -111,16 +155,3 @@ class Plotter(object):
 
         return size_vect
     
-    
-    def _build_graph(self, model):
-        graph = nx.DiGraph()
-        for node in model.nodes:
-            graph.add_node(node.id, size=node.size)
-    
-        for node in model.nodes:
-            for conn in node.connections:
-                graph.add_edge(node.id, conn) 
-        
-        return graph
-
-

@@ -25,7 +25,7 @@ import sys
 
 from coffea.builder import Builder, PackageNodeFactory, ClassNodeFactory 
 from coffea.model import NodeIdFilter, NodeIdMapper
-from coffea.plotter import Plotter
+from coffea.analyzer import Plotter, Writer
 
 class FilterAction(argparse.Action):
     
@@ -40,10 +40,16 @@ class FilterAction(argparse.Action):
 
 parser = argparse.ArgumentParser(version=pkg_resources.get_distribution('coffea').version)
 parser.add_argument('-i', '--input', nargs='+', metavar='PATH', required=True, help='provides a list of input files and/or directories to scan (supported formats: .class, .jar, .war, .ear).')
+
+output_group = parser.add_mutually_exclusive_group(required=True)
+output_group.add_argument('-o', '--output', metavar='FILE', help='output file')
+output_group.add_argument('-p', '--plot', help='plot graph in an interactive window', action='store_true')
+
+parser.add_argument('-f', '--format', choices=['dot', 'gml', 'graphml'], default='dot', help='select output format')
 parser.add_argument('-m', '--mode', choices=['class', 'package'], default='class', help='select model type')
 parser.add_argument('-R', '--remove-ext-conn', help='remove external connections', action='store_true')
 parser.add_argument('-ns', '--node-size', choices=['class', 'code'], default=None, help='select node size model')
-parser.add_argument('-V', '--verbose', help='increase output verbosity', action='count')
+parser.add_argument('-V', '--verbose', help='increase verbosity', action='count')
 
 filter_group = parser.add_argument_group('node filters (order matters)')
 filter_group.add_argument('-Ir', '--include-regexp', metavar='REGEXP', action=FilterAction, help='include nodes matching REGEXP')
@@ -62,6 +68,8 @@ if args.verbose == 1:
     logging.basicConfig(level=logging.INFO)
 else:
     logging.basicConfig(level=logging.WARN)
+
+logging.getLogger('java').setLevel(logging.WARN)
     
 log = logging.getLogger('coffea')
 log.level = logging.INFO
@@ -156,9 +164,15 @@ try:
         log.info('Creating external nodes...')
         extn_count = builder.model.create_external_nodes()
         log.info('Found %d external nodes.', extn_count)
-         
-    plotter = Plotter(builder.model)
-    plotter.plot(calc_node_size=args.node_size is not None)
+    
+    if args.output is not None:
+        writer = Writer(builder.model)
+        writer.write(args.output, data_format=args.format) 
+    elif args.plot:     
+        plotter = Plotter(builder.model)
+        plotter.plot(calc_node_size=args.node_size is not None)
+    else:
+        raise AssertionError('Unknown action.')
 
 except (KeyboardInterrupt, SystemExit):
     sys.stderr.write('Terminated.\n')
