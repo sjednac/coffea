@@ -41,3 +41,13 @@ Interactive mode equivalent::
     [Displays an interactive view of the dependency model]
     
     >>> p.plot(filename='/tmp/jboss7_module_dependencies.png')
+
+
+Unit testing
+============
+
+You can run the test suite directly from the command line::
+
+    $ python -m unittest discover
+
+
