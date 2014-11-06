@@ -1,11 +1,16 @@
-Coffea
-======
+******************************************************
+Coffea: a static dependency analyzer for Java bytecode
+******************************************************
 
-Static dependency analyzer for Java bytecode.
+Coffea is a command line tool and Python library for analyzing **static dependences** in **Java** bytecode. Features:
 
-TODO: Feature summary 
-
-TODO: Requirements / Setup instructions
+    * Class processing handled entirely in Python (i.e. no JVM dependency and no class loader issues) 
+    * Recursive processing of directories (e.g. exploded deployments) and basic archive formats (jar, war and ear)   
+    * Package or class based dependency models
+    * Node weight based on actual code size (i.e. bytecode size)
+    * Node filters and mappers for basic noise reduction (eg. removing certain packages from the model)
+    * Basic graph visualisation using *matplotlib*
+    * Exporting to common graph formats using standard *networkx* facilities (eg. dot, gml or graphml)
 
 Usage
 =====
@@ -14,8 +19,8 @@ Run the command-line tool (use ``coffea -h`` for a complete list of options)::
 
     $ coffea -i <directory|jar|war|ear|class>
 
-An extended example
-===================
+Example
+=======
 
 Modelling `JBoss AS 7.x <http://www.jboss.org/jbossas>`_ internal dependency structure:: 
 
