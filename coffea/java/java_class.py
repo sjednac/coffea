@@ -177,14 +177,11 @@ class JavaClass(object):
                 (utf8_str_len,) = struct.unpack('>H', f.read(2))
                 cp_item = CPUtf8(tag, utf8_str_len, *struct.unpack(str(utf8_str_len)+'s', f.read(utf8_str_len)))    
             elif tag == _CONSTANT_MethodHandle:
-                #FIXME: Implement MethodHandle parser
-                raise AssertionError('Not implemented: MethodHandle!')
+                cp_item = CPMethodHandle(tag, *struct.unpack('>BH', f.read(3)))
             elif tag == _CONSTANT_MethodType:
-                #FIXME: Implement MethodType parser
-                raise AssertionError('Not implemented: MethodType!')
+                cp_item = CPMethodType(tag, *struct.unpack('>H', f.read(2)))
             elif tag == _CONSTANT_InvokeDynamic:
-                #FIXME: Implement InvokeDynamic parser
-                raise AssertionError('Not implemented: InvokeDynamic!')
+                cp_item = CPInvokeDynamic(tag, *struct.unpack('>HH', f.read(4)))
             else:
                 log.error('Unknown tag: %d', tag)
                 raise AssertionError('Unknown tag: {0}'.format(tag))
