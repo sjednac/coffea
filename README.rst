@@ -47,7 +47,11 @@ Interactive mode equivalent::
     
     >>> p.plot(filename='/tmp/jboss7_module_dependencies.png')
 
+Output:
 
+.. image:: https://github.com/sbilinski/coffea/blob/master/examples/output/jboss_as_7.png
+    :alt: JBoss 7.x internal dependencies
+    
 Unit testing
 ============
 
