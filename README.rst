@@ -8,7 +8,7 @@ Coffea is a command line tool and Python library for analyzing **static dependen
 * Recursive processing of directories (e.g. exploded deployments) and basic archive formats (jar, war and ear)   
 * Package or class based dependency models
 * Node weight based on actual code size (i.e. bytecode size)
-* Node filters and mappers for basic noise reduction (eg. removing certain packages from the model)
+* Node filters and mappers for basic noise reduction (eg. removing certain packages from the model or folding several packages into one node)
 * Basic graph visualisation using *matplotlib*
 * Exporting to common graph formats using standard *networkx* facilities (eg. dot, gml or graphml)
 
