@@ -27,6 +27,7 @@ output_file='output/glassfish_dependencies.dot'
 ### Logger ###
 import logging
 logging.basicConfig(level=logging.INFO)
+logging.getLogger('scanner').setLevel(logging.WARN)
 logging.getLogger('java').setLevel(logging.WARN)
 
 

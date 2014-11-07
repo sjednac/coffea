@@ -26,6 +26,8 @@ jboss7_mods = jboss7_home +  "/modules"
 ### Logger ###
 import logging
 logging.basicConfig(level=logging.INFO)
+logging.getLogger('scanner').setLevel(logging.WARN)
+logging.getLogger('java').setLevel(logging.WARN)
 
 
 ### Analysys ###
